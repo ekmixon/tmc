@@ -7,7 +7,7 @@ def get_adversaries_x_technique():
     db = get_db()
     try:
         db.row_factory = make_dicts
-        query = db.execute(
+        return db.execute(
             'SELECT a.adversary_id As \'Adversary ID\', a.adversary_name as Adversary,  t.technique_id as \'Technique ID\', t.technique_name as Technique, s.subtechnique_id as \'Subtechnique ID\',s.subtechnique_name as Subtechnique \
                 FROM adversaries a \
                 inner join adversaries_x_tools axt on axt.adversary_id=a.id \
@@ -15,8 +15,9 @@ def get_adversaries_x_technique():
                 inner join tools_x_subtechniques txst on txst.tool_id=axt.tool_id \
                 inner join techniques t on t.id=txt.technique_id \
                 inner join subtechniques s on s.id=txst.subtechnique_id \
-                ORDER BY a.adversary_name ').fetchall() #LIMIT 100 OFFSET 200
-        return query
+                ORDER BY a.adversary_name '
+        ).fetchall()
+
     except TypeError:
         #embed()
         return False #Change this for something more meaningful -- warning/alert 

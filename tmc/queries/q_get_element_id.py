@@ -9,9 +9,9 @@ def get_element_id(table, column, value): #FROM MOBILE, TECHNIQUE 'COMPROMISE' n
     db = get_db()
     try:
         query = db.execute(
-            'SELECT id FROM {} WHERE lower({}) is ?'.format(table, column),
-            (value2,)
-            )
+            f'SELECT id FROM {table} WHERE lower({column}) is ?', (value2,)
+        )
+
         result = query.fetchone()
         return result['id']
     except TypeError:

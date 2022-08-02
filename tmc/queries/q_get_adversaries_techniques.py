@@ -27,7 +27,6 @@ def get_adversaries_techniques(adversary_id):
             where at.adversary_id=? \
             ORDER BY t.tool_name, tec.technique_id, stec.subtechnique_id' ,
             (adversary_id, adversary_id, ))
-        result = query.fetchall()
-        return result
+        return query.fetchall()
     except TypeError:
         return False

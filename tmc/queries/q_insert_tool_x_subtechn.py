@@ -7,12 +7,11 @@ def insert_tool_x_subtechn(table, tool_id, subtechnique_id):
     	author_id = g.user['id']
     except (NameError, TypeError) as error:
     	author_id = 1
-    	
+
     g.db = get_db()
-    query='INSERT INTO {} ({}, {}, {}) VALUES (?, ?, ?)'.format(table, 'author_id', 'tool_id', 'subtechnique_id')
+    query = f'INSERT INTO {table} (author_id, tool_id, subtechnique_id) VALUES (?, ?, ?)'
+
 
     result = g.db.execute(query, (author_id, tool_id, subtechnique_id))
     g.db.commit()
-    element_id = result.lastrowid
-
-    return element_id
+    return result.lastrowid

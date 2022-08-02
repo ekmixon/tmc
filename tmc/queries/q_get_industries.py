@@ -7,9 +7,10 @@ def get_industries():
     db = get_db()
     try:
         db.row_factory = make_dicts
-        query = db.execute(
-            'SELECT id as db_id, industry_name as Industry FROM industries ORDER BY industry_name ASC').fetchall()
-        return query
+        return db.execute(
+            'SELECT id as db_id, industry_name as Industry FROM industries ORDER BY industry_name ASC'
+        ).fetchall()
+
     except TypeError:
         #embed()
         return False #Change this for something more meaningful -- warning/alert 

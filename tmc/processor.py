@@ -32,7 +32,7 @@ class Adversary():
             aliases_list = element['aliases']
 
             for element in aliases_list:
-                self.attack_identifiers += element + '; '
+                self.attack_identifiers += f'{element}; '
 
         except KeyError:
             self.attack_identifiers = ''
@@ -118,7 +118,7 @@ def get_elements():
 
         if element['revoked'] == True:
             continue
-  
+
         technique_id = element['external_references'][0]['external_id']
 
         if '.' in technique_id:
@@ -143,20 +143,20 @@ def get_elements():
 
 def insert_tactic(attack_id, tactic_name, tactic_description):
 
-    existence = q.q_get_element_id.get_element_id('tactics', 'tactic_name', tactic_name)
-    if not existence:
-        insert_into_table = q.q_insert_into_tables.insert_into_tables('tactics', attack_id, tactic_name, tactic_description)
-        logging.info('Created tactic %s' % tactic_name)
-        return insert_into_table
-    else:
+    if existence := q.q_get_element_id.get_element_id(
+        'tactics', 'tactic_name', tactic_name
+    ):
         return existence
+    insert_into_table = q.q_insert_into_tables.insert_into_tables('tactics', attack_id, tactic_name, tactic_description)
+    logging.info(f'Created tactic {tactic_name}')
+    return insert_into_table
 
 
 # Adding ATT&CK Techniques
 def insert_technique(attack_id, technique_name, technique_description):
 
     insert_into_table = q.q_insert_into_tables.insert_into_tables('techniques', attack_id, technique_name, technique_description)
-    logging.info('Created technique %s' % technique_name)
+    logging.info(f'Created technique {technique_name}')
     return insert_into_table
 
 
@@ -164,7 +164,7 @@ def insert_technique(attack_id, technique_name, technique_description):
 def insert_subtechnique(attack_id, subtechnique_name, subtechnique_description):
 
     insert_into_table = q.q_insert_into_tables.insert_into_tables('subtechniques', attack_id, subtechnique_name, subtechnique_description)
-    logging.info('Created technique %s' % subtechnique_name)
+    logging.info(f'Created technique {subtechnique_name}')
     return insert_into_table
 
 
@@ -172,7 +172,7 @@ def insert_subtechnique(attack_id, subtechnique_name, subtechnique_description):
 def insert_adversary(attack_id, adversary_name, adversary_description, attack_identifiers):
 
     insert_into_table = q.q_insert_adversary_into_tables.insert_adversary_into_tables('adversaries', attack_id, adversary_name, adversary_description, attack_identifiers)
-    logging.info('Created adversary %s' % adversary_name)
+    logging.info(f'Created adversary {adversary_name}')
     return insert_into_table
 
 
@@ -180,7 +180,7 @@ def insert_adversary(attack_id, adversary_name, adversary_description, attack_id
 def insert_tool(attack_id, tool_name, tool_description):
 
     insert_into_table = q.q_insert_into_tables.insert_into_tables('tools', attack_id, tool_name, tool_description)
-    logging.info('Created tool %s' % tool_name)
+    logging.info(f'Created tool {tool_name}')
     return insert_into_table
 
 
@@ -194,11 +194,11 @@ def insert_toolxtec(tool_name, tool_id, techniques_used):
         if '.' in technique_attack_id:
             subtechnique_id = q.q_get_element_id.get_element_id('subtechniques', 'subtechnique_id', technique_attack_id)
             result = q.q_insert_tool_x_subtechn.insert_tool_x_subtechn('tools_x_subtechniques', tool_id, subtechnique_id)
-    
+
         else:
             technique_id = q.q_get_element_id.get_element_id('techniques', 'technique_id', technique_attack_id)
             result = q.q_insert_tool_x_techn.insert_tool_x_techn('tools_x_techniques', tool_id, technique_id)
-        logging.info('Created relationship for %s' % tool_name)
+        logging.info(f'Created relationship for {tool_name}')
     return result
 
 
@@ -215,13 +215,13 @@ def insert_tacxtec(technique_id, related_tactic):
     tactic_id = q.q_get_element_id.get_element_id('tactics', 'tactic_name', tactic)
 
     if tactic_id == 0:
-        logging.info('Unrecognized tactic in %s: ' % technique_id)
+        logging.info(f'Unrecognized tactic in {technique_id}: ')
     else:
         try:
             tactic_x_technique = q.q_insert_tactic_x_technique.insert_tactic_x_technique(tactic_id, technique_id)
             logging.info('Created tactic relationship')
         except KeyError:
-             logging.info('Raised KeyError exception with tactic in %s: ' % technique_id)
+            logging.info(f'Raised KeyError exception with tactic in {technique_id}: ')
 
 
 # Insert relation insert_advxtool

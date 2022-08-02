@@ -49,30 +49,30 @@ def index():
 @bp.route('/tram-interaction', methods=["GET", "POST"])
 def tram_mapping():
 
-    if request.method == "POST":
+    if request.method != "POST":
+        return
+    req = request.form
+    adversary_dict = ast.literal_eval(req['adversary']) # convert string dict into real dict
+    adversary = adversary_dict['db_id']
+    tool_dict = ast.literal_eval(req['tool']) # convert string dict into real dict
+    tool = tool_dict['db_id']
+    industry_dict = ast.literal_eval(req['industry']) # convert string dict into real dict
+    industry = industry_dict['db_id']
+    event_name = req['event_name']
+    event_description = req['event_description']
+    event_url = req['url']
 
-        req = request.form
-        adversary_dict = ast.literal_eval(req['adversary']) # convert string dict into real dict
-        adversary = adversary_dict['db_id']
-        tool_dict = ast.literal_eval(req['tool']) # convert string dict into real dict
-        tool = tool_dict['db_id']
-        industry_dict = ast.literal_eval(req['industry']) # convert string dict into real dict
-        industry = industry_dict['db_id']
-        event_name = req['event_name']
-        event_description = req['event_description']
-        event_url = req['url']
-
-        # Creates the security event and all its relationships
-        event = q.q_insert_into_events.insert_into_events(event_name, event_description, event_url)
-        adv_x_event = q.q_insert_adversary_x_event.insert_adversary_x_event(adversary, event)
-        event_x_ind = q.q_insert_event_x_industry.insert_event_x_industry(event, industry)
+    # Creates the security event and all its relationships
+    event = q.q_insert_into_events.insert_into_events(event_name, event_description, event_url)
+    adv_x_event = q.q_insert_adversary_x_event.insert_adversary_x_event(adversary, event)
+    event_x_ind = q.q_insert_event_x_industry.insert_event_x_industry(event, industry)
         # Sends the URL provided to TRAM for mapping
-        tram_id=str(tool)+'_'+event_name
-        print(tram_id)
-        send_url_to_tram(tram_id, event_url)
-        message = 'Please complete TRAM workflow before continuing. TMC will automatically process TRAM mapping when done. Please wait before continuing..'
+    tram_id = f'{str(tool)}_{event_name}'
+    print(tram_id)
+    send_url_to_tram(tram_id, event_url)
+    message = 'Please complete TRAM workflow before continuing. TMC will automatically process TRAM mapping when done. Please wait before continuing..'
 
-        return render_template('maps/completed.html', message=message)
+    return render_template('maps/completed.html', message=message)
 
 
 # Issues POST request to TRAM with the report URL you want to process
@@ -121,33 +121,24 @@ def wait_tram_response():
 
 
 # Open Navigator
-@bp.route('/nav/<element>/<element_id>') 
+@bp.route('/nav/<element>/<element_id>')
 def open_in_nav(element, element_id): 
     nav_dict = {
-       "name":"Threat Mapping Catalogue",
-        "versions": {
-        "attack": "8",
-        "navigator": "4.0",
-        "layer": "4.0"
+        "name": "Threat Mapping Catalogue",
+        "versions": {"attack": "8", "navigator": "4.0", "layer": "4.0"},
+        "description": f"{element} related techniques",
+        "domain": "mitre-enterprise",
+        "gradient": {
+            "colors": ["#778ca3", "#778ca3"],
+            "minValue": 0,
+            "maxValue": 100,
         },
-       "description": element + " related techniques",
-       "domain":"mitre-enterprise",
-       "gradient":{
-          "colors":[
-             "#778ca3",
-             "#778ca3"
-          ],
-          "minValue":0,
-          "maxValue":100
-       },
-       "legendItems":[
-          {
-             "label":"Has at least one test",
-             "color":"#ce232e"
-          }
-       ],
-       "techniques":[]
-       }
+        "legendItems": [
+            {"label": "Has at least one test", "color": "#ce232e"}
+        ],
+        "techniques": [],
+    }
+
 
     element_techniques = ''
 
@@ -183,8 +174,8 @@ def open_in_nav(element, element_id):
 
 
 def create_nav_file(nav_dict, element, element_id):
-    filename = element + '_' + str(element_id) + '_' + str(uuid.uuid1()) + '.json'
-    directory = os.path.dirname(os.path.realpath(__file__)) + '/static/export/'
+    filename = f'{element}_{str(element_id)}_{str(uuid.uuid1())}.json'
+    directory = f'{os.path.dirname(os.path.realpath(__file__))}/static/export/'
     filepath = directory + filename
 
     with open(filepath, 'w+') as fh:
@@ -208,11 +199,12 @@ def export_file(element, element_id):
     return render_template('maps/explore/main.html') 
 
 def create_csv_file(element_techniques, element, element_id):
-    
+
     headers = 'Tool \t Technique ID \t Technique \t Subtechnique ID \t Subtechnique'
-    filename = element + '_' + str(element_id) + '_techniques_mapped_' + str(uuid.uuid1()) +'.csv'
+    filename = f'{element}_{str(element_id)}_techniques_mapped_{str(uuid.uuid1())}.csv'
+
     parent = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..'))
-    filepath = parent + '/export/' + filename
+    filepath = f'{parent}/export/{filename}'
 
 
     with open(filepath, 'w+', newline='') as new_file:
@@ -319,16 +311,22 @@ def explore_subtechniques():
 # Display Adversaries per event
 @bp.route('/adversaries-x-event')
 def get_adversaries_x_event():  
-    
+
     title='Adversaries per event'
 
     adversaries_x_event = q.q_get_adversaries_x_event.get_adversaries_x_event()
     adversaries_x_event_th = adversaries_x_event[0].keys()
 
-    if not adversaries_x_event:
-        return render_template('maps/no-data.html')
-
-    return render_template('maps/explore/explore-element.html', title=title, element_th=adversaries_x_event_th, paginated_element=adversaries_x_event)
+    return (
+        render_template(
+            'maps/explore/explore-element.html',
+            title=title,
+            element_th=adversaries_x_event_th,
+            paginated_element=adversaries_x_event,
+        )
+        if adversaries_x_event
+        else render_template('maps/no-data.html')
+    )
 
 
 # Display Adversaries per suspected origin
@@ -352,12 +350,17 @@ def get_adversaries_x_sorigin():
 def get_adversaries_x_industry():  
 
     adversaries_x_industry = ''
-    
-    if not adversaries_x_industry:
-        return render_template('maps/no-data.html')  
 
-    else:
-        return render_template('maps/explore/explore-element.html', title=title, element_th=adversaries_x_sorigin_th, paginated_element=adversaries_x_sorigin)
+    return (
+        render_template(
+            'maps/explore/explore-element.html',
+            title=title,
+            element_th=adversaries_x_sorigin_th,
+            paginated_element=adversaries_x_sorigin,
+        )
+        if adversaries_x_industry
+        else render_template('maps/no-data.html')
+    )
 
 
 # Display events by industry
@@ -367,12 +370,17 @@ def get_events_x_industry():
     title = 'Events per industry'
     events_x_industry = q.q_get_events_x_industry.get_events_x_industry()
     events_x_industry_th = events_x_industry[0].keys()
-    
-    if not events_x_industry:
-        return render_template('maps/no-data.html')
 
-    else:
-        return render_template('maps/explore/explore-element.html', title=title, element_th=events_x_industry_th, paginated_element=events_x_industry)
+    return (
+        render_template(
+            'maps/explore/explore-element.html',
+            title=title,
+            element_th=events_x_industry_th,
+            paginated_element=events_x_industry,
+        )
+        if events_x_industry
+        else render_template('maps/no-data.html')
+    )
 
 
 # Display Techniques per industry
@@ -381,12 +389,16 @@ def get_techniques_per_industry():
 
     techniques_per_industry = ''
 
-    if not techniques_per_industry:
-        return render_template('maps/no-data.html')
-
-    else:
-
-        return render_template('maps/explore/explore-element.html', title=title, element_th=adversaries_x_sorigin_th, paginated_element=adversaries_x_sorigin)
+    return (
+        render_template(
+            'maps/explore/explore-element.html',
+            title=title,
+            element_th=adversaries_x_sorigin_th,
+            paginated_element=adversaries_x_sorigin,
+        )
+        if techniques_per_industry
+        else render_template('maps/no-data.html')
+    )
 
 
 # Display Adversaries per tool
@@ -450,7 +462,7 @@ def create_event():
 @bp.route('/create-adversary', methods=('GET', 'POST'))
 @login_required
 def create_adversary():
-    
+
     countries_list = q.q_get_countries.get_countries()
 
     if request.method == "POST":
@@ -459,11 +471,7 @@ def create_adversary():
         adversary_description = request.form['description']
         adversary_identifiers = request.form['adversary_identifiers']
         adversary_origin = request.form['sorigin']
-        error = None
-
-        if not adversary_name:
-            error = 'Adversary name is required.'
-
+        error = None if adversary_name else 'Adversary name is required.'
         if error is not None:
             flash(error)
         else:
@@ -492,10 +500,17 @@ def render_edit_adversary(element):
     else:
         adversary_techniques_th = ''
 
-    if not request_adversary:
-        return render_template('maps/404.html')
-    else:
-        return render_template('maps/creation/create-adversary.html', request_adversary_techniques=request_adversary_techniques, element_th=adversary_techniques_th, request_adversary=request_adversary, countries_list=countries_list)
+    return (
+        render_template(
+            'maps/creation/create-adversary.html',
+            request_adversary_techniques=request_adversary_techniques,
+            element_th=adversary_techniques_th,
+            request_adversary=request_adversary,
+            countries_list=countries_list,
+        )
+        if request_adversary
+        else render_template('maps/404.html')
+    )
 
 
 @bp.route('/edit-adversary', methods=('GET', 'POST'))
@@ -567,10 +582,17 @@ def render_edit_tool(element):
     else:
         tool_techniques_th = ''
 
-    if not request_tool:
-        return render_template('maps/404.html')
-    else:
-        return render_template('maps/creation/create-tool.html', request_tools_techniques=request_tools_techniques, element_th=tool_techniques_th, request_tool=request_tool, adversary_list=adversary_list)
+    return (
+        render_template(
+            'maps/creation/create-tool.html',
+            request_tools_techniques=request_tools_techniques,
+            element_th=tool_techniques_th,
+            request_tool=request_tool,
+            adversary_list=adversary_list,
+        )
+        if request_tool
+        else render_template('maps/404.html')
+    )
 
 
 @bp.route('/edit-tool', methods=('GET', 'POST'))
@@ -648,10 +670,17 @@ def render_edit_technique(element):
     else:
         request_related_tools_th = ''
 
-    if not request_technique:
-        return render_template('maps/404.html')
-    else:
-        return render_template('maps/creation/create-technique.html', request_related_tools=request_related_tools, element_th=request_related_tools_th, request_technique=request_technique, tactics_list=tactics_list)
+    return (
+        render_template(
+            'maps/creation/create-technique.html',
+            request_related_tools=request_related_tools,
+            element_th=request_related_tools_th,
+            request_technique=request_technique,
+            tactics_list=tactics_list,
+        )
+        if request_technique
+        else render_template('maps/404.html')
+    )
 
 
 @bp.route('/edit-technique', methods=('GET', 'POST'))
@@ -724,10 +753,17 @@ def render_edit_subtechnique(element):
     else:
         request_related_tools_th = ''
 
-    if not request_subtechnique:
-        return render_template('maps/404.html')
-    else:
-        return render_template('maps/creation/create-subtechnique.html', request_related_tools=request_related_tools, element_th=request_related_tools_th, request_subtechnique=request_subtechnique, techniques_list=techniques_list)
+    return (
+        render_template(
+            'maps/creation/create-subtechnique.html',
+            request_related_tools=request_related_tools,
+            element_th=request_related_tools_th,
+            request_subtechnique=request_subtechnique,
+            techniques_list=techniques_list,
+        )
+        if request_subtechnique
+        else render_template('maps/404.html')
+    )
 
 
 @bp.route('/edit-subtechnique', methods=('GET', 'POST'))

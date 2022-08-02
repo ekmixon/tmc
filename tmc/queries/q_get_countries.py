@@ -7,9 +7,10 @@ def get_countries():
     db = get_db()
     try:
         db.row_factory = lambda cursor, row: row[0]
-        query = db.execute(
-            'SELECT country FROM countries ORDER BY country').fetchall()
-        return query
+        return db.execute(
+            'SELECT country FROM countries ORDER BY country'
+        ).fetchall()
+
     except TypeError:
         #embed()
         return False #Change this for something more meaningful -- warning/alert 

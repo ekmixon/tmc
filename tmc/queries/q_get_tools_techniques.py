@@ -26,7 +26,6 @@ def get_tools_techniques(tool_id):
             where t.id=? \
             ORDER BY t.tool_name, tec.technique_id, stec.subtechnique_id',
             (tool_id, tool_id, ))
-        result = query.fetchall()
-        return result
+        return query.fetchall()
     except TypeError:
         return False

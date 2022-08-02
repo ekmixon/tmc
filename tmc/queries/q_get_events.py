@@ -7,9 +7,10 @@ def get_events():
     db = get_db()
     try:
         db.row_factory = make_dicts
-        query = db.execute(
-            'SELECT event_name as Event, event_description as Description, event_url as URL FROM events').fetchall()
-        return query
+        return db.execute(
+            'SELECT event_name as Event, event_description as Description, event_url as URL FROM events'
+        ).fetchall()
+
     except TypeError:
         #embed()
         return False #Change this for something more meaningful -- warning/alert 
